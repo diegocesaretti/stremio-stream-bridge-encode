@@ -1,4 +1,4 @@
-"""Connectivity sensor for Stremio Stream Bridge."""
+"""Connectivity sensor for Stremio Stream Bridge Encode."""
 
 from __future__ import annotations
 
@@ -13,8 +13,18 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import StremioBridgeRuntime
 from .const import (
-    CONF_AUDIO_MODE,
-    CONF_CAST_COMPATIBILITY_FILTER,
+    CHROMECAST_V1_AUDIO_BITRATE,
+    CHROMECAST_V1_AUDIO_CHANNELS,
+    CHROMECAST_V1_AUDIO_CODEC,
+    CHROMECAST_V1_AUDIO_PROFILE,
+    CHROMECAST_V1_AUDIO_SAMPLE_RATE,
+    CHROMECAST_V1_MAX_FPS,
+    CHROMECAST_V1_MAX_HEIGHT,
+    CHROMECAST_V1_MAX_VIDEO_BITRATE,
+    CHROMECAST_V1_MAX_WIDTH,
+    CHROMECAST_V1_VIDEO_CODEC,
+    CHROMECAST_V1_VIDEO_LEVEL,
+    CHROMECAST_V1_VIDEO_PROFILE,
     CONF_CAST_RESET_BEFORE_PLAY,
     CONF_DEFAULT_MEDIA_PLAYER,
     CONF_FAILURE_NOTIFY_HA,
@@ -23,8 +33,6 @@ from .const import (
     CONF_PLAYBACK_START_TIMEOUT,
     CONF_PLAY_IDEAL_ON_SELECT,
     CONF_STOP_BEFORE_PLAY,
-    DEFAULT_AUDIO_MODE,
-    DEFAULT_CAST_COMPATIBILITY_FILTER,
     DEFAULT_CAST_RESET_BEFORE_PLAY,
     DEFAULT_FAILURE_NOTIFY_HA,
     DEFAULT_FALLBACK_ENABLED,
@@ -50,7 +58,7 @@ async def async_setup_entry(
 
 
 class StremioBridgeConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
-    """Show whether stream-server and at least one add-on are reachable."""
+    """Show whether Stream Server and at least one add-on are reachable."""
 
     _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
     _attr_has_entity_name = True
@@ -64,7 +72,7 @@ class StremioBridgeConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
             "identifiers": {(DOMAIN, entry.entry_id)},
             "name": entry.title,
             "manufacturer": "Stremio / Home Assistant",
-            "model": "Aggregate Stream Bridge",
+            "model": "Stream Bridge Encode",
         }
 
     @property
@@ -80,9 +88,6 @@ class StremioBridgeConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
         errors = data.get("addon_errors", {})
         default_player = self._entry.options.get(
             CONF_DEFAULT_MEDIA_PLAYER,
-    CONF_FAILURE_NOTIFY_HA,
-    CONF_FALLBACK_ENABLED,
-    CONF_FALLBACK_SOURCE_COUNT,
             self._entry.data.get(CONF_DEFAULT_MEDIA_PLAYER),
         )
         current = {**self._entry.data, **self._entry.options}
@@ -95,10 +100,23 @@ class StremioBridgeConnectivitySensor(CoordinatorEntity, BinarySensorEntity):
             "default_player": default_player,
             "external_subtitles_supported": is_cast_player(self.hass, default_player),
             "subtitle_border": "none",
-            "audio_mode": current.get(CONF_AUDIO_MODE, DEFAULT_AUDIO_MODE),
-            "cast_compatibility_filter": current.get(
-                CONF_CAST_COMPATIBILITY_FILTER, DEFAULT_CAST_COMPATIBILITY_FILTER
+            "playback_strategy": "always_transcode",
+            "target_device": "Chromecast 1st generation",
+            "target_video": (
+                f"{CHROMECAST_V1_VIDEO_CODEC} {CHROMECAST_V1_VIDEO_PROFILE} "
+                f"level {CHROMECAST_V1_VIDEO_LEVEL}"
             ),
+            "target_picture": (
+                f"{CHROMECAST_V1_MAX_WIDTH}x{CHROMECAST_V1_MAX_HEIGHT} "
+                f"at {CHROMECAST_V1_MAX_FPS} fps"
+            ),
+            "target_video_bitrate": CHROMECAST_V1_MAX_VIDEO_BITRATE,
+            "target_audio": (
+                f"{CHROMECAST_V1_AUDIO_CODEC}-{CHROMECAST_V1_AUDIO_PROFILE} "
+                f"{CHROMECAST_V1_AUDIO_CHANNELS}ch "
+                f"{CHROMECAST_V1_AUDIO_SAMPLE_RATE}Hz"
+            ),
+            "target_audio_bitrate": CHROMECAST_V1_AUDIO_BITRATE,
             "stop_before_play": current.get(
                 CONF_STOP_BEFORE_PLAY, DEFAULT_STOP_BEFORE_PLAY
             ),
