@@ -1,6 +1,6 @@
 {
   "domain": "stremio_stream_bridge",
-  "name": "Stremio Stream Bridge",
+  "name": "Stremio Stream Bridge Encode",
   "codeowners": [
     "@diegocesaretti"
   ],
@@ -9,9 +9,9 @@
     "media_source",
     "http"
   ],
-  "documentation": "https://github.com/diegocesaretti/stremio-stream-bridge",
+  "documentation": "https://github.com/diegocesaretti/stremio-stream-bridge-encode",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "requirements": [],
-  "version": "0.5.3"
+  "version": "0.6.0"
 }
