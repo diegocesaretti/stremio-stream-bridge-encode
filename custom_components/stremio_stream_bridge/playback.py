@@ -1,64 +1,60 @@
-"""Prepare player-compatible media URLs and validate automatic candidates."""
+"""Build and validate encode-first playback URLs for Chromecast 1st generation."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import logging
 from typing import Any
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-from .api import (
-    StremioBridgeError,
-    StremioStreamServerClient,
-    guess_stream_mime_type,
-)
+from .api import StremioBridgeError, StremioStreamServerClient
 from .const import (
-    CONF_AUDIO_MODE,
-    DEFAULT_AUDIO_MODE,
-    PROFILE_SPORTS,
+    CHROMECAST_V1_AUDIO_BITRATE,
+    CHROMECAST_V1_AUDIO_CHANNELS,
+    CHROMECAST_V1_AUDIO_CODEC,
+    CHROMECAST_V1_AUDIO_PROFILE,
+    CHROMECAST_V1_AUDIO_SAMPLE_RATE,
+    CHROMECAST_V1_MAX_FPS,
+    CHROMECAST_V1_MAX_HEIGHT,
+    CHROMECAST_V1_MAX_VIDEO_BITRATE,
+    CHROMECAST_V1_MAX_WIDTH,
+    CHROMECAST_V1_VIDEO_CODEC,
+    CHROMECAST_V1_VIDEO_LEVEL,
+    CHROMECAST_V1_VIDEO_PROFILE,
 )
-from .stream_selector import direct_play_compatibility_rank
 
 _LOGGER = logging.getLogger(__name__)
 _HLS_MIME = "application/vnd.apple.mpegurl"
-_INCOMPATIBLE_AUDIO_MARKERS = (
-    "dts",
-    "truehd",
-    "eac3",
-    "e-ac-3",
-    "ddp",
-    "dolby digital plus",
-    "ac3",
-    "ac-3",
-    "7.1",
-)
 
 
-def _stream_text(stream: Mapping[str, Any]) -> str:
-    hints = stream.get("behaviorHints")
-    filename = hints.get("filename") if isinstance(hints, Mapping) else None
-    return " ".join(
-        str(value).lower()
-        for value in (
-            stream.get("name"),
-            stream.get("title"),
-            stream.get("description"),
-            filename,
-        )
-        if value
+def _with_chromecast_v1_contract(url: str) -> str:
+    """Attach an explicit Chromecast Gen 1 output contract to an HLS URL.
+
+    Recent stream-server builds may ignore some of these compatibility keys. They
+    remain useful for patched builds and make the requested output unambiguous.
+    Validation still rejects a source when the resulting HLS manifest cannot be
+    created.
+    """
+    parsed = urlsplit(url)
+    query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+    query.update(
+        {
+            "forceTranscoding": "1",
+            "videoCodecs": CHROMECAST_V1_VIDEO_CODEC,
+            "videoProfile": CHROMECAST_V1_VIDEO_PROFILE,
+            "videoLevel": CHROMECAST_V1_VIDEO_LEVEL,
+            "maxWidth": str(CHROMECAST_V1_MAX_WIDTH),
+            "maxHeight": str(CHROMECAST_V1_MAX_HEIGHT),
+            "maxFrameRate": str(CHROMECAST_V1_MAX_FPS),
+            "maxVideoBitrate": str(CHROMECAST_V1_MAX_VIDEO_BITRATE),
+            "audioCodecs": CHROMECAST_V1_AUDIO_CODEC,
+            "audioProfile": CHROMECAST_V1_AUDIO_PROFILE,
+            "maxAudioChannels": str(CHROMECAST_V1_AUDIO_CHANNELS),
+            "audioBitrate": str(CHROMECAST_V1_AUDIO_BITRATE),
+            "audioSampleRate": str(CHROMECAST_V1_AUDIO_SAMPLE_RATE),
+        }
     )
-
-
-def needs_compatible_hls(stream: Mapping[str, Any], resolved_url: str) -> bool:
-    """Return whether the stream is likely to need AAC/HLS compatibility."""
-    lowered_url = resolved_url.lower().split("?", 1)[0]
-    if lowered_url.endswith((".m3u8", ".mpd")):
-        return False
-    if stream.get("infoHash"):
-        return True
-    text = _stream_text(stream)
-    if text.endswith((".mkv", ".avi")) or ".mkv" in text or ".avi" in text:
-        return True
-    return any(marker in text for marker in _INCOMPATIBLE_AUDIO_MARKERS)
+    return urlunsplit(parsed._replace(query=urlencode(query)))
 
 
 def prepare_playback(
@@ -69,35 +65,20 @@ def prepare_playback(
     profile: str,
     cast_target: bool = False,
 ) -> tuple[str, str]:
-    """Resolve a stream while keeping the proven direct path as the default.
+    """Resolve one source and always request on-the-fly transcoding.
 
-    v0.4.0 attempted to route likely-incompatible files through ``hlsv2`` in
-    automatic mode. Some stream-server builds expose the endpoint but cannot
-    actually create the playlist, which broke media that previously played.
-    Automatic is therefore a backwards-compatible alias for direct playback.
-    HLS transcoding is used only when the user explicitly selects
-    ``force_transcode``.
+    ``options``, ``profile`` and ``cast_target`` stay in the signature for API
+    compatibility with existing callers. This encode-focused variant deliberately
+    ignores direct-play and format compatibility preferences.
     """
+    del options, profile, cast_target
     resolved_url = server.resolve_stream(stream)
-    mode = str(options.get(CONF_AUDIO_MODE, DEFAULT_AUDIO_MODE))
-
-    # Never wrap an existing live playlist. Its tokens, Referer headers and
-    # relative segment URLs must remain exactly as supplied by the add-on.
-    lowered_url = resolved_url.lower().split("?", 1)[0]
-    is_playlist = lowered_url.endswith((".m3u8", ".mpd"))
-    if mode != "force_transcode" or profile == PROFILE_SPORTS or is_playlist:
-        return resolved_url, guess_stream_mime_type(
-            stream, resolved_url, cast_target=cast_target
-        )
-
-    return (
-        server.build_compatible_hls_url(
-            resolved_url,
-            force_transcoding=True,
-            max_audio_channels=2,
-        ),
-        _HLS_MIME,
+    encoded_url = server.build_compatible_hls_url(
+        resolved_url,
+        force_transcoding=True,
+        max_audio_channels=CHROMECAST_V1_AUDIO_CHANNELS,
     )
+    return _with_chromecast_v1_contract(encoded_url), _HLS_MIME
 
 
 async def prepare_first_playable(
@@ -108,19 +89,17 @@ async def prepare_first_playable(
     profile: str,
     cast_target: bool = False,
 ) -> tuple[dict[str, Any], str, str]:
-    """Resolve ranked candidates and fall back safely when HLS conversion fails."""
+    """Return the first candidate whose encoded HLS output validates.
+
+    There is intentionally no direct-play fallback. If transcoding fails, the next
+    ranked source is tried; returning the original MKV/HEVC/DTS source would defeat
+    the compatibility guarantee this project is built around.
+    """
     if not candidates:
         raise StremioBridgeError("No stream candidates are available")
 
     failures: list[str] = []
-    mode = str(options.get(CONF_AUDIO_MODE, DEFAULT_AUDIO_MODE))
-    ordered_candidates = list(candidates)
-    if cast_target and len(ordered_candidates) > 1:
-        # Stable sort: direct-play compatibility wins, while the ideal-link
-        # quality/seed/size order is preserved inside each compatibility tier.
-        ordered_candidates.sort(key=direct_play_compatibility_rank)
-
-    for position, stream in enumerate(ordered_candidates):
+    for position, stream in enumerate(candidates):
         try:
             url, mime_type = prepare_playback(
                 server,
@@ -137,44 +116,23 @@ async def prepare_first_playable(
         if valid:
             if position:
                 _LOGGER.info(
-                    "Selected fallback stream %s after %s rejected candidate(s)",
+                    "Selected encoded fallback stream %s after %s rejected candidate(s)",
                     position + 1,
                     position,
                 )
-            _LOGGER.debug("Prepared stream URL %s with MIME %s", url, mime_type)
+            _LOGGER.debug("Prepared Chromecast Gen 1 HLS URL %s", url)
             return stream, url, mime_type
 
-        failures.append(reason or "playlist validation failed")
+        failure = reason or "encoded HLS validation failed"
+        failures.append(failure)
         _LOGGER.warning(
-            "Skipping unavailable automatic stream candidate %s: %s",
+            "Skipping source %s because its encoded HLS output failed: %s",
             position + 1,
-            reason or "validation failed",
+            failure,
         )
-
-        # A failed hlsv2 conversion must never make a formerly-working stream
-        # unusable. Restore the original stream-server URL immediately.
-        if mode == "force_transcode" and "/hlsv2/" in url:
-            try:
-                direct_url = server.resolve_stream(stream)
-                direct_mime = guess_stream_mime_type(
-                    stream, direct_url, cast_target=cast_target
-                )
-                direct_valid, direct_reason = await server.async_validate_media_url(
-                    direct_url, direct_mime
-                )
-            except StremioBridgeError as err:
-                failures.append(str(err))
-            else:
-                if direct_valid:
-                    _LOGGER.warning(
-                        "hlsv2 audio conversion failed; falling back to direct playback"
-                    )
-                    return stream, direct_url, direct_mime
-                failures.append(direct_reason or "direct fallback validation failed")
 
     detail = "; ".join(failures[-3:])
     raise StremioBridgeError(
-        "All automatically selected stream links failed validation"
+        "All selected sources failed Chromecast Gen 1 transcoding"
         + (f": {detail}" if detail else "")
     )
-

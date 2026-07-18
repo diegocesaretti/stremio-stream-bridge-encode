@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0
+
+- Renamed the displayed project to **Stremio Stream Bridge Encode**.
+- Changed playback to encode-first mode: every selected source requests forced HLS transcoding.
+- Removed direct playback fallback after an HLS conversion failure.
+- Removed codec/container compatibility from source filtering and ranking.
+- Retained quality, seed count, maximum-size and bad-release ranking controls.
+- Added an explicit Chromecast 1st generation output contract: H.264 High level 4.1, up to 1080p30, AAC-LC stereo and conservative bitrates.
+- Reduced the selectable source-quality presets to 1080p and below for this target device.
+- Updated the connectivity sensor to expose the requested encoder profile.
+- Documented that strict compatibility also requires Stream Server's FFmpeg command to enforce the requested limits.
+
 ## 0.5.3
 
 - Añade filtros por nombre para `H.264`, `H264`, `x264` y `AVC` frente a `H.265`, `H265`, `x265` y `HEVC`.
@@ -41,7 +53,7 @@
 - Added a Cast compatibility filter, enabled by default. Automatic playback now prefers MP4/H.264/AAC and removes known-incompatible MKV, AVI, HEVC/x265, AV1, DTS, TrueHD, E-AC-3, AC-3 and advertised 5.1/7.1 audio candidates whenever a safer alternative exists.
 - Automatic stream labels now show container, video codec and audio codec.
 - Added direct torrent prebuffering with a small HTTP Range request before handing the URL to Cast. Dead or stalled candidates fall through to the next ranked source.
-- Added `Stop current playback before starting`, enabled by default. The selected player receives `media_stop`, waits briefly for the previous HTTP reader to close, then starts the new stream session.
+- Added `Stop current playback before starting`, enabled by default. The selected player receives `media_stop`, waits briefly for the previous stream reader to close, then starts the new stream session.
 - Restored the legacy `video/mp4` Cast MIME fallback for an MKV/AVI torrent only when it is the remaining fallback.
 - No undocumented stream-server reset endpoint is called; stopping the player plus prebuffering the new URL is the safe cross-version session reset.
 

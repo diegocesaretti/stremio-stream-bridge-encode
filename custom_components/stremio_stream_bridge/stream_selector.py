@@ -1,4 +1,4 @@
-"""Human-readable stream labels and automatic quality selection."""
+"""Human-readable stream labels and format-neutral source ranking."""
 
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def _source_text(stream: dict[str, Any]) -> str:
 
 
 def parse_container(stream: dict[str, Any]) -> str | None:
-    """Return a compact container label from URL or filename hints."""
+    """Return a compact container label for display only."""
     source = _source_text(stream)
     for extension, label in (
         (".m3u8", "HLS"),
@@ -106,7 +106,7 @@ def parse_container(stream: dict[str, Any]) -> str | None:
 
 
 def parse_named_video_codec(stream: dict[str, Any]) -> str | None:
-    """Return H.264 or HEVC using only add-on names, descriptions and filename hints."""
+    """Return a codec label for display only; it never changes ranking."""
     text = stream_text(stream)
     if _H265_NAME_RE.search(text):
         return "HEVC"
@@ -115,29 +115,13 @@ def parse_named_video_codec(stream: dict[str, Any]) -> str | None:
     return None
 
 
-def _named_codec_rank(stream: dict[str, Any], *, h264_available: bool) -> int:
-    """Prefer named H.264 results while retaining HEVC as a final fallback."""
-    if not h264_available:
-        return 0
-    codec = parse_named_video_codec(stream)
-    if codec == "H.264":
-        return 0
-    if codec == "HEVC":
-        return 2
-    return 1
-
-
 def parse_video_codec(stream: dict[str, Any]) -> str | None:
-    """Return the video codec advertised by common torrent release names."""
+    """Return the video codec advertised by a release name, for labels only."""
     if named_codec := parse_named_video_codec(stream):
         return named_codec
     source = _source_text(stream)
-    if any(marker in source for marker in ("x265", "h265", "h.265", "hevc")):
-        return "HEVC"
     if "av1" in source:
         return "AV1"
-    if any(marker in source for marker in ("x264", "h264", "h.264", "avc")):
-        return "H.264"
     if "vp9" in source:
         return "VP9"
     if "vp8" in source:
@@ -146,7 +130,7 @@ def parse_video_codec(stream: dict[str, Any]) -> str | None:
 
 
 def parse_audio_codec(stream: dict[str, Any]) -> str | None:
-    """Return the audio codec advertised by common torrent release names."""
+    """Return the audio codec advertised by a release name, for labels only."""
     source = _source_text(stream)
     if "truehd" in source:
         return "TrueHD"
@@ -168,7 +152,7 @@ def parse_audio_codec(stream: dict[str, Any]) -> str | None:
 
 
 def parse_audio_channels(stream: dict[str, Any]) -> str | None:
-    """Return an advertised channel layout when present in the release name."""
+    """Return an advertised channel layout, for labels only."""
     source = _source_text(stream)
     if any(marker in source for marker in ("7.1", "7ch")):
         return "7.1"
@@ -180,33 +164,13 @@ def parse_audio_channels(stream: dict[str, Any]) -> str | None:
 
 
 def cast_compatibility_tier(stream: dict[str, Any]) -> int:
-    """Classify direct-play confidence for a conservative Google Cast target.
+    """Return a neutral compatibility tier.
 
-    0 is explicitly compatible, 1 is unknown/likely, and 2 is known risky.
-    The ranking uses add-on release text, so it is deliberately conservative.
+    Kept for backwards-compatible imports. All formats are accepted because every
+    selected source is expected to be transcoded before playback.
     """
-    container = parse_container(stream)
-    video = parse_video_codec(stream)
-    audio = parse_audio_codec(stream)
-    channels = parse_audio_channels(stream)
-
-    if container in {"HLS", "DASH"}:
-        return 0
-    if container in {"MKV", "AVI"}:
-        return 2
-    if video in {"HEVC", "AV1"}:
-        return 2
-    if audio in {"DTS", "TrueHD", "E-AC-3", "AC-3"}:
-        return 2
-    if channels in {"5.1", "7.1"}:
-        return 2
-
-    explicitly_safe_container = container in {"MP4", "WebM", "TS", "M2TS"}
-    explicitly_safe_video = video in {"H.264", "VP8", "VP9"}
-    explicitly_safe_audio = audio in {"AAC", "MP3", "Opus", "Vorbis"}
-    if explicitly_safe_container and explicitly_safe_video and explicitly_safe_audio:
-        return 0
-    return 1
+    del stream
+    return 0
 
 
 def stream_label(stream: dict[str, Any], position: int | None = None) -> str:
@@ -245,46 +209,9 @@ def stream_label(stream: dict[str, Any], position: int | None = None) -> str:
 
 
 def direct_play_compatibility_rank(stream: dict[str, Any]) -> tuple[int, int, int, int]:
-    """Rank a stream for direct playback on Cast and browser players."""
-    source = _source_text(stream)
-    container = parse_container(stream)
-    video = parse_video_codec(stream)
-    audio = parse_audio_codec(stream)
-
-    container_rank = {
-        "HLS": 0,
-        "DASH": 0,
-        "MP4": 0,
-        "WebM": 1,
-        "TS": 2,
-        "M2TS": 2,
-        None: 3,
-        "MKV": 5,
-        "AVI": 6,
-    }.get(container, 4)
-    video_rank = {"H.264": 0, "VP9": 1, "VP8": 1, None: 2, "HEVC": 4, "AV1": 5}.get(
-        video, 3
-    )
-    audio_rank = {
-        "AAC": 0,
-        "MP3": 0,
-        "Opus": 1,
-        "Vorbis": 1,
-        None: 2,
-        "AC-3": 3,
-        "E-AC-3": 4,
-        "DTS": 5,
-        "TrueHD": 6,
-    }.get(audio, 3)
-    multichannel_rank = (
-        1 if any(marker in source for marker in ("5.1", "7.1", "atmos")) else 0
-    )
-    return (
-        cast_compatibility_tier(stream),
-        container_rank,
-        video_rank,
-        audio_rank + multichannel_rank,
-    )
+    """Return a neutral rank retained for backwards-compatible imports."""
+    del stream
+    return (0, 0, 0, 0)
 
 
 def _filtered_candidates(
@@ -292,6 +219,7 @@ def _filtered_candidates(
     max_size_gb: float,
     exclude_keywords: str,
 ) -> list[dict[str, Any]]:
+    """Apply non-format filters: bad release tags and optional maximum source size."""
     excluded = [word.strip().lower() for word in exclude_keywords.split(",") if word.strip()]
 
     def allowed(stream: dict[str, Any], enforce_size: bool = True) -> bool:
@@ -323,24 +251,17 @@ def order_ideal_streams(
     prefer_direct_play: bool = False,
     strict_compatibility: bool = False,
 ) -> list[dict[str, Any]]:
-    """Rank all usable links for automatic playback and fallback.
+    """Rank usable links by quality, seed count and size only.
 
-    Compatibility is applied first when requested. When an H.264/x264 name is
-    available it is preferred over unknown codecs and H.265/x265/HEVC names, then
-    quality, seed count and file size decide the retry order.
+    The direct-play flags are accepted for compatibility with older callers but are
+    deliberately ignored. Containers and codecs never remove or promote a source.
     """
+    del prefer_direct_play, strict_compatibility
     if not streams:
         return []
     candidates = _filtered_candidates(streams, max_size_gb, exclude_keywords)
-    if prefer_direct_play and strict_compatibility:
-        compatible = [stream for stream in candidates if cast_compatibility_tier(stream) < 2]
-        if compatible:
-            candidates = compatible
     target_map = {"2160p": 2160, "1080p": 1080, "720p": 720, "480p": 480}
     target = target_map.get(preferred_quality)
-    named_h264_available = any(
-        parse_named_video_codec(stream) == "H.264" for stream in candidates
-    )
 
     def quality_rank(quality: int) -> tuple[int, int]:
         if preferred_quality == "lowest":
@@ -353,17 +274,11 @@ def order_ideal_streams(
             if quality > target:
                 return (2, quality - target)
             return (3, 9999)
-        # auto: prefer the highest known quality.
         return (0 if quality else 1, -quality)
 
     def rank(stream: dict[str, Any]) -> tuple[Any, ...]:
         size = parse_size_gb(stream)
-        compatibility = (
-            direct_play_compatibility_rank(stream) if prefer_direct_play else ()
-        )
         return (
-            *compatibility,
-            _named_codec_rank(stream, h264_available=named_h264_available),
             *quality_rank(parse_quality(stream)),
             -parse_seeders(stream),
             size if size is not None else 9999,
@@ -378,7 +293,7 @@ def choose_ideal_stream(
     max_size_gb: float,
     exclude_keywords: str,
 ) -> dict[str, Any]:
-    """Choose the first ranked ideal link."""
+    """Choose the first ranked format-neutral link."""
     ordered = order_ideal_streams(streams, max_size_gb, exclude_keywords)
     if not ordered:
         raise ValueError("No streams to select")
@@ -391,39 +306,13 @@ def choose_best_stream(
     max_size_gb: float,
     exclude_keywords: str,
 ) -> dict[str, Any]:
-    """Select a practical stream using quality, size, release tags and seeds."""
-    if not streams:
-        raise ValueError("No streams to select")
-    candidates = _filtered_candidates(streams, max_size_gb, exclude_keywords)
-
-    target_map = {"2160p": 2160, "1080p": 1080, "720p": 720, "480p": 480}
-    target = target_map.get(preferred_quality)
-    named_h264_available = any(
-        parse_named_video_codec(stream) == "H.264" for stream in candidates
+    """Select a source by quality, seed count and size, never by format."""
+    ordered = order_ideal_streams(
+        streams,
+        max_size_gb,
+        exclude_keywords,
+        preferred_quality=preferred_quality,
     )
-
-    def quality_rank(quality: int) -> tuple[int, int]:
-        if preferred_quality == "lowest":
-            return (0 if quality else 1, quality or 9999)
-        if target is not None:
-            if quality == target:
-                return (0, 0)
-            if 0 < quality < target:
-                return (1, target - quality)
-            if quality > target:
-                return (2, quality - target)
-            return (3, 9999)
-        return (0 if quality else 1, -quality)
-
-    def rank(stream: dict[str, Any]) -> tuple[Any, ...]:
-        quality = parse_quality(stream)
-        size = parse_size_gb(stream)
-        return (
-            _named_codec_rank(stream, h264_available=named_h264_available),
-            *quality_rank(quality),
-            -parse_seeders(stream),
-            size if size is not None else 9999,
-            stream_key(stream),
-        )
-
-    return min(candidates, key=rank)
+    if not ordered:
+        raise ValueError("No streams to select")
+    return ordered[0]
