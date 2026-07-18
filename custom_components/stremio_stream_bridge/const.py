@@ -1,9 +1,9 @@
-"""Constants for Stremio Stream Bridge."""
+"""Constants for Stremio Stream Bridge Encode."""
 
 from __future__ import annotations
 
 DOMAIN = "stremio_stream_bridge"
-NAME = "Stremio Stream Bridge"
+NAME = "Stremio Stream Bridge Encode"
 
 CONF_STREAMING_SERVER_URL = "streaming_server_url"
 CONF_CATALOG_MANIFEST_URLS = "catalog_manifest_urls"
@@ -18,7 +18,7 @@ CONF_PREFERRED_QUALITY = "preferred_quality"
 CONF_MAX_SIZE_GB = "max_size_gb"
 CONF_EXCLUDE_KEYWORDS = "exclude_keywords"
 CONF_IDEAL_LINK_FILTER = "ideal_link_filter"
-CONF_CAST_COMPATIBILITY_FILTER = "cast_compatibility_filter"
+CONF_CAST_COMPATIBILITY_FILTER = "cast_compatibility_filter"  # Legacy, ignored.
 CONF_STOP_BEFORE_PLAY = "stop_before_play"
 CONF_CAST_RESET_BEFORE_PLAY = "cast_reset_before_play"
 CONF_FALLBACK_ENABLED = "fallback_enabled"
@@ -30,7 +30,7 @@ CONF_TVOVERLAY_SERVICE = "tvoverlay_service"
 CONF_TVOVERLAY_TARGET = "tvoverlay_target"
 CONF_TVOVERLAY_DURATION = "tvoverlay_duration"
 CONF_PLAY_IDEAL_ON_SELECT = "play_ideal_on_select"
-CONF_AUDIO_MODE = "audio_mode"
+CONF_AUDIO_MODE = "audio_mode"  # Legacy storage key; encoding is always forced.
 CONF_SUBTITLE_MODE = "subtitle_mode"
 CONF_SUBTITLE_LANGUAGES = "subtitle_languages"
 CONF_SUBTITLE_CONVERT_VTT = "subtitle_convert_vtt"
@@ -51,27 +51,41 @@ DEFAULT_PREFERRED_QUALITY = "1080p"
 DEFAULT_MAX_SIZE_GB = 12.0
 DEFAULT_EXCLUDE_KEYWORDS = "CAM, HDCAM, TS, TELECINE, SCREENER"
 DEFAULT_IDEAL_LINK_FILTER = True
-DEFAULT_CAST_COMPATIBILITY_FILTER = True
+DEFAULT_CAST_COMPATIBILITY_FILTER = False
 DEFAULT_STOP_BEFORE_PLAY = True
 DEFAULT_CAST_RESET_BEFORE_PLAY = True
 DEFAULT_FALLBACK_ENABLED = True
 DEFAULT_FALLBACK_SOURCE_COUNT = 5
-DEFAULT_PLAYBACK_START_TIMEOUT = 15
+DEFAULT_PLAYBACK_START_TIMEOUT = 30
 DEFAULT_FAILURE_NOTIFY_HA = True
 DEFAULT_TVOVERLAY_ENABLED = False
 DEFAULT_TVOVERLAY_SERVICE = "notify.tvoverlaynotify"
 DEFAULT_TVOVERLAY_TARGET = ""
 DEFAULT_TVOVERLAY_DURATION = 10
 DEFAULT_PLAY_IDEAL_ON_SELECT = True
-DEFAULT_AUDIO_MODE = "direct"
+DEFAULT_AUDIO_MODE = "force_transcode"
 DEFAULT_SUBTITLE_MODE = "automatic"
 DEFAULT_SUBTITLE_LANGUAGES = "spa, eng"
 DEFAULT_SUBTITLE_CONVERT_VTT = True
 DEFAULT_SUBTITLE_BASE_URL = ""
 DEFAULT_SCAN_INTERVAL_SECONDS = 60
 
-QUALITY_OPTIONS = ["auto", "2160p", "1080p", "720p", "480p", "lowest"]
-AUDIO_MODE_OPTIONS = ["automatic", "direct", "force_transcode"]
+# Conservative output contract for Chromecast 1st generation.
+CHROMECAST_V1_VIDEO_CODEC = "h264"
+CHROMECAST_V1_VIDEO_PROFILE = "high"
+CHROMECAST_V1_VIDEO_LEVEL = "4.1"
+CHROMECAST_V1_MAX_WIDTH = 1920
+CHROMECAST_V1_MAX_HEIGHT = 1080
+CHROMECAST_V1_MAX_FPS = 30
+CHROMECAST_V1_MAX_VIDEO_BITRATE = 8_000_000
+CHROMECAST_V1_AUDIO_CODEC = "aac"
+CHROMECAST_V1_AUDIO_PROFILE = "lc"
+CHROMECAST_V1_AUDIO_CHANNELS = 2
+CHROMECAST_V1_AUDIO_BITRATE = 192_000
+CHROMECAST_V1_AUDIO_SAMPLE_RATE = 48_000
+
+QUALITY_OPTIONS = ["auto", "1080p", "720p", "480p", "lowest"]
+AUDIO_MODE_OPTIONS = ["force_transcode"]
 SUBTITLE_MODE_OPTIONS = ["automatic", "disabled"]
 
 PROFILE_DEFAULT = "default"
