@@ -1,5 +1,5 @@
 {
-  "name": "Stremio Stream Bridge",
+  "name": "Stremio Stream Bridge Encode",
   "homeassistant": "2026.7.0",
   "render_readme": true
 }
