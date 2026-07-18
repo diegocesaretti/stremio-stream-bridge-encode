@@ -1,0 +1,11 @@
+{
+  "metas": [
+    {
+      "id": "campo2026",
+      "type": "series",
+      "name": "Temporada de campo 2026",
+      "description": "Serie de ejemplo con episodios.",
+      "poster": "https://placehold.co/600x900?text=Campo+2026"
+    }
+  ]
+}

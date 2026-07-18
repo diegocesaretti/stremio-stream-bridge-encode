@@ -1,0 +1,25 @@
+{
+  "meta": {
+    "id": "campo2026",
+    "type": "series",
+    "name": "Temporada de campo 2026",
+    "description": "Serie de ejemplo con episodios propios.",
+    "poster": "https://placehold.co/600x900?text=Campo+2026",
+    "videos": [
+      {
+        "id": "campo2026e01",
+        "title": "Siembra de trigo",
+        "season": 1,
+        "episode": 1,
+        "released": "2026-06-01T00:00:00.000Z"
+      },
+      {
+        "id": "campo2026e02",
+        "title": "Preparación de la sembradora",
+        "season": 1,
+        "episode": 2,
+        "released": "2026-06-08T00:00:00.000Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,97 @@
+{
+  "title": "Stremio Stream Bridge",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Create an aggregate Stremio library",
+        "description": "Configure the PC server and providers. Latin Audio and Sports are preloaded; a temporary optional-provider outage will not block the integration.",
+        "data": {
+          "streaming_server_url": "stream-server URL",
+          "catalog_manifest_urls": "Catalog and metadata manifests",
+          "stream_manifest_urls": "Default stream manifests",
+          "subtitle_manifest_urls": "Subtitle manifests",
+          "latin_manifest_urls": "Latin Audio manifests",
+          "sports_manifest_urls": "F1 and Sports manifests",
+          "default_media_player": "Default media player"
+        },
+        "data_description": {
+          "streaming_server_url": "Recommended server for this installation: {recommended_server_url}",
+          "catalog_manifest_urls": "One URL per line. Cinemeta is preloaded.",
+          "stream_manifest_urls": "One URL per line. Torrentio is preloaded.",
+          "subtitle_manifest_urls": "OpenSubtitles v3 is preloaded; leave empty to disable.",
+          "latin_manifest_urls": "Preloaded to prioritize Spanish/Latin audio. This profile plays without subtitles.",
+          "sports_manifest_urls": "StremVerse is preloaded for F1 and sports. Its outages do not block movies and series.",
+          "default_media_player": "Chromecast, Android TV or another media_player entity"
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Providers and playback",
+        "data": {
+          "streaming_server_url": "PC stream-server URL",
+          "default_media_player": "Default media player",
+          "catalog_manifest_urls": "Catalog and metadata manifests",
+          "stream_manifest_urls": "Default stream manifests",
+          "latin_manifest_urls": "Latin Audio manifests",
+          "sports_manifest_urls": "F1 and Sports manifests",
+          "subtitle_manifest_urls": "Subtitle manifests",
+          "play_ideal_on_select": "Play ideal link when selecting an item",
+          "ideal_link_filter": "Enable ideal-link filter",
+          "audio_mode": "Audio compatibility",
+          "preferred_quality": "Preferred quality",
+          "max_size_gb": "Maximum size in GB (0 = unlimited)",
+          "exclude_keywords": "Excluded keywords",
+          "subtitle_mode": "Subtitle mode",
+          "subtitle_languages": "Preferred subtitle languages",
+          "subtitle_convert_vtt": "Convert subtitles to WebVTT",
+          "subtitle_base_url": "Home Assistant subtitle base URL",
+          "cast_compatibility_filter": "Filter Google Cast-compatible formats",
+          "stop_before_play": "Stop current playback before starting",
+          "cast_reset_before_play": "Fully close Cast receiver before playback",
+          "fallback_enabled": "Try backup sources automatically",
+          "fallback_source_count": "Maximum ranked sources to try",
+          "playback_start_timeout": "Seconds allowed for each source to start",
+          "failure_notify_ha": "Notify in Home Assistant after all sources fail",
+          "tvoverlay_enabled": "Notify failures through TvOverlay",
+          "tvoverlay_service": "TvOverlay service",
+          "tvoverlay_target": "TvOverlay target",
+          "tvoverlay_duration": "TvOverlay duration in seconds"
+        },
+        "data_description": {
+          "catalog_manifest_urls": "One URL per line.",
+          "stream_manifest_urls": "Default providers for movies and series.",
+          "latin_manifest_urls": "Preloaded with a Spanish/Latin provider. Used only by Latin Audio and plays without subtitles.",
+          "sports_manifest_urls": "StremVerse is preloaded for F1/sports. A temporary failure does not block the rest of the integration.",
+          "subtitle_manifest_urls": "One URL per line. Leave empty to disable.",
+          "play_ideal_on_select": "Enabled by default. Movies, episodes and events play directly without opening the source list.",
+          "ideal_link_filter": "Prefers player compatibility, then 1080p, most seeders and, on ties, the smallest file.",
+          "audio_mode": "Direct is the safe default and preserves the playback route used by earlier versions. Automatic is kept as a direct-playback compatibility alias. Force transcode uses hlsv2 and falls back to direct if conversion fails.",
+          "exclude_keywords": "Comma separated, for example CAM, TS, HDCAM.",
+          "subtitle_mode": "Automatic loads the first preferred language on Google Cast.",
+          "subtitle_languages": "ISO codes in priority order, for example spa, eng.",
+          "subtitle_convert_vtt": "Downloads, converts and serves WebVTT from Home Assistant.",
+          "subtitle_base_url": "Recommended LAN URL reachable by Chromecast: {recommended_subtitle_base_url}",
+          "streaming_server_url": "Recommended server for this installation: {recommended_server_url}",
+          "cast_compatibility_filter": "Enabled by default. Prefers MP4/H.264/AAC stereo and excludes MKV, HEVC/x265, DTS, TrueHD, E-AC-3, AC-3 and advertised 5.1/7.1 audio when a compatible alternative exists.",
+          "stop_before_play": "Enabled by default. Sends media_stop to the selected player, waits for the previous stream reader to close, then prebuffers the new source.",
+          "cast_reset_before_play": "For Cast entities, sends media_stop and turn_off, waits for the receiver app to close, then starts a clean session. It does not power off the television.",
+          "fallback_enabled": "Ranks the best sources and automatically tries the next one when the player does not reach playing state.",
+          "fallback_source_count": "Default 5. Sources are ordered by compatibility, preferred quality, seeders and size.",
+          "playback_start_timeout": "How long each source may remain loading before the next ranked source is attempted.",
+          "failure_notify_ha": "Creates a persistent Home Assistant notification with the title, attempted source count and cover image.",
+          "tvoverlay_enabled": "Also sends the final failure to TvOverlay when a service is configured.",
+          "tvoverlay_service": "Examples: tvoverlay_ui.notify or notify.tvoverlaynotify.",
+          "tvoverlay_target": "Optional. For tvoverlay_ui enter its stable device identifier. Also accepts device:, entity:, area:, target:, or host: prefixes.",
+          "tvoverlay_duration": "How many seconds the failure overlay remains visible."
+        }
+      }
+    }
+  },
+  "error": {
+    "cannot_connect": "Could not connect to the main stream-server. Check its IP address and port 11470.",
+    "invalid_config": "The core configuration is invalid. Check the catalog and default stream URLs."
+  }
+}

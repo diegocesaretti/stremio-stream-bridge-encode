@@ -1,0 +1,8 @@
+{
+  "streams": [
+    {
+      "name": "HTTP directo",
+      "url": "http://192.168.1.50:8080/videos/campo-2026-e01.mp4"
+    }
+  ]
+}

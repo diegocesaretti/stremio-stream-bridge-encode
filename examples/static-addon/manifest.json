@@ -1,0 +1,20 @@
+{
+  "id": "ar.com.bwa3d.misvideos",
+  "version": "1.0.0",
+  "name": "Mis videos",
+  "description": "Catálogo privado de videos para Stremio Stream Bridge",
+  "resources": ["catalog", "meta", "stream"],
+  "types": ["movie", "series"],
+  "catalogs": [
+    {
+      "type": "movie",
+      "id": "videos-familiares",
+      "name": "Videos familiares"
+    },
+    {
+      "type": "series",
+      "id": "series-propias",
+      "name": "Series propias"
+    }
+  ]
+}

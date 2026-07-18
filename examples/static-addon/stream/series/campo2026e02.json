@@ -1,0 +1,12 @@
+{
+  "streams": [
+    {
+      "name": "Torrent local",
+      "infoHash": "fedcba9876543210fedcba9876543210fedcba98",
+      "fileIdx": 0,
+      "behaviorHints": {
+        "filename": "campo-2026-e02.mp4"
+      }
+    }
+  ]
+}
